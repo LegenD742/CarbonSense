@@ -1,0 +1,35 @@
+{
+  "unit": "gCO2eq/kWh",
+  "source": "Our World in Data / Electricity Maps 2023 estimates",
+  "countries": {
+    "IN": { "name": "India", "intensity": 708, "grid": "coal_heavy" },
+    "US": { "name": "United States", "intensity": 369, "grid": "mixed" },
+    "CN": { "name": "China", "intensity": 555, "grid": "coal_heavy" },
+    "GB": { "name": "United Kingdom", "intensity": 233, "grid": "mixed_renewable" },
+    "DE": { "name": "Germany", "intensity": 385, "grid": "mixed" },
+    "FR": { "name": "France", "intensity": 56, "grid": "nuclear_heavy" },
+    "NO": { "name": "Norway", "intensity": 26, "grid": "hydro_heavy" },
+    "AU": { "name": "Australia", "intensity": 620, "grid": "coal_heavy" },
+    "CA": { "name": "Canada", "intensity": 120, "grid": "hydro_mixed" },
+    "BR": { "name": "Brazil", "intensity": 74, "grid": "hydro_heavy" },
+    "JP": { "name": "Japan", "intensity": 474, "grid": "mixed" },
+    "KR": { "name": "South Korea", "intensity": 415, "grid": "mixed" },
+    "ZA": { "name": "South Africa", "intensity": 900, "grid": "coal_heavy" },
+    "SE": { "name": "Sweden", "intensity": 13, "grid": "nuclear_hydro" },
+    "IT": { "name": "Italy", "intensity": 233, "grid": "mixed" },
+    "ES": { "name": "Spain", "intensity": 165, "grid": "renewable_mixed" },
+    "MX": { "name": "Mexico", "intensity": 440, "grid": "mixed" },
+    "RU": { "name": "Russia", "intensity": 350, "grid": "mixed" },
+    "SG": { "name": "Singapore", "intensity": 408, "grid": "gas_heavy" },
+    "NL": { "name": "Netherlands", "intensity": 290, "grid": "mixed" },
+    "GLOBAL": { "name": "Global Average", "intensity": 475, "grid": "mixed" }
+  },
+  "grid_types": {
+    "coal_heavy": "High fossil fuel dependence",
+    "nuclear_heavy": "High nuclear, low emissions",
+    "hydro_heavy": "High hydropower, low emissions",
+    "mixed_renewable": "Transitioning to renewables",
+    "mixed": "Balanced mix of sources",
+    "gas_heavy": "Natural gas dominated"
+  }
+}

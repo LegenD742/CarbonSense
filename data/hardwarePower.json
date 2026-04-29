@@ -1,0 +1,30 @@
+{
+  "cpu_profiles": {
+    "default": { "idle_w": 10, "max_w": 65, "tdp_w": 65 },
+    "laptop_low": { "idle_w": 5, "max_w": 25, "tdp_w": 25 },
+    "laptop_mid": { "idle_w": 8, "max_w": 45, "tdp_w": 45 },
+    "desktop_mid": { "idle_w": 12, "max_w": 65, "tdp_w": 65 },
+    "desktop_high": { "idle_w": 20, "max_w": 125, "tdp_w": 125 },
+    "server": { "idle_w": 40, "max_w": 200, "tdp_w": 200 },
+    "workstation": { "idle_w": 30, "max_w": 150, "tdp_w": 150 }
+  },
+  "ram_per_gb_w": 0.375,
+  "disk": {
+    "hdd_w": 6.0,
+    "ssd_w": 2.0,
+    "nvme_w": 3.5
+  },
+  "activity_overheads": {
+    "coding": 1.0,
+    "gaming": 2.2,
+    "ml_training": 1.8,
+    "video_streaming": 1.3,
+    "browsing": 0.8,
+    "idle": 0.3
+  },
+  "notes": {
+    "ram_total_gb_assumed": 16,
+    "disk_type_assumed": "ssd",
+    "overhead_multiplier": "scales cpu dynamic power"
+  }
+}
