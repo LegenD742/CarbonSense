@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carbon.exe — Digital Carbon Footprint Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  /* ─── CSS Variables ─── */
+  :root {
+    --bg-primary:   #080c0f;
+    --bg-secondary: #0d1318;
+    --bg-panel:     #111820;
+    --bg-card:      #141c24;
+    --border:       #1e2d3d;
+    --border-glow:  #0d4f3c;
+    --accent-green: #00ff88;
+    --accent-teal:  #00d4aa;
+    --accent-red:   #ff3b3b;
+    --accent-amber: #ffaa00;
+    --accent-blue:  #0088ff;
+    --text-primary: #e2ffe8;
+    --text-muted:   #4a7060;
+    --text-code:    #7effb2;
+    --scanline: rgba(0,255,136,0.03);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── Scanlines overlay ─── */
+  body::before {
+    content: '';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--scanline) 2px,
+      var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ─── Grid background ─── */
+  body::after {
+    content: '';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── Mono font ─── */
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+
+  /* ─── Glow effects ─── */
+  .glow-green { text-shadow: 0 0 8px var(--accent-green), 0 0 20px rgba(0,255,136,0.3); }
+  .glow-red   { text-shadow: 0 0 8px var(--accent-red); }
+  .glow-amber { text-shadow: 0 0 8px var(--accent-amber); }
+
+  .border-glow {
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 0 12px rgba(0,255,136,0.05), inset 0 0 12px rgba(0,255,136,0.02);
+  }
+
+  /* ─── Panel ─── */
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+    opacity: 0.4;
+  }
+
+  /* ─── Panel header ─── */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(0,255,136,0.04);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-red    { background: #ff5f57; }
+  .dot-amber  { background: #febc2e; }
+  .dot-green  { background: #28c840; }
+
+  /* ─── Code editor ─── */
+  #code-input {
+    width: 100%;
+    min-height: 260px;
+    background: var(--bg-secondary);
+    border: none;
+    outline: none;
+    resize: vertical;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-code);
+    caret-color: var(--accent-green);
+    tab-size: 4;
+  }
+  #code-input::placeholder { color: var(--text-muted); }
+
+  /* ─── Buttons ─── */
+  .btn-primary {
+    background: transparent;
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary:hover {
+    background: rgba(0,255,136,0.08);
+    box-shadow: 0 0 16px rgba(0,255,136,0.2);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,255,136,0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+  .btn-primary:hover::after { transform: translateX(100%); }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+
+  /* ─── Select ─── */
+  select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  select:hover, select:focus { border-color: var(--accent-green); }
+  select option { background: var(--bg-secondary); }
+
+  /* ─── Metric card ─── */
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 16px;
+    position: relative;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .metric-card:hover {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 12px rgba(0,255,136,0.06);
+  }
+  .metric-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+  }
+  .metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-green);
+    line-height: 1;
+  }
+  .metric-unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ─── Progress bar ─── */
+  .progress-track {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    height: 6px;
+    border-radius: 0;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent-green);
+    transition: width 1s ease;
+    box-shadow: 0 0 6px var(--accent-green);
+  }
+
+  /* ─── CO₂ rating badge ─── */
+  .rating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ─── Terminal output ─── */
+  .terminal {
+    background: #050a08;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #66cc88;
+    padding: 14px 16px;
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .terminal::-webkit-scrollbar { width: 4px; }
+  .terminal::-webkit-scrollbar-track { background: transparent; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--border-glow); }
+
+  /* ─── Input fields ─── */
+  .input-field {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent-green); }
+
+  /* ─── Tab system ─── */
+  .tab-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 20px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active {
+    color: var(--accent-green);
+    border-bottom-color: var(--accent-green);
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 4px rgba(0,255,136,0.2); }
+    50%       { box-shadow: 0 0 16px rgba(0,255,136,0.5); }
+  }
+  @keyframes scanRight {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(400%); }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .fade-in  { animation: fadeIn 0.4s ease forwards; }
+  .blink    { animation: blink 1s step-end infinite; }
+  .animate-scan { animation: scanRight 2s ease-in-out infinite; }
+
+  /* ─── Loading spinner ─── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Comparison bars ─── */
+  .compare-bar {
+    height: 3px;
+    background: var(--accent-teal);
+    box-shadow: 0 0 4px var(--accent-teal);
+    transition: width 1s ease;
+  }
+
+  /* ─── History table ─── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .data-table th {
+    background: rgba(0,255,136,0.05);
+    border-bottom: 1px solid var(--border-glow);
+    padding: 8px 12px;
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 9px;
+  }
+  .data-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    color: var(--text-primary);
+  }
+  .data-table tr:hover td { background: rgba(0,255,136,0.03); }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-glow); }
+
+  /* ─── Section heading ─── */
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+    margin-bottom: 4px;
+  }
+
+  /* ─── CO₂ big display ─── */
+  .co2-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body class="relative z-10">
+
+<!-- ═══════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════ -->
+<header class="border-b sticky top-0 z-50" style="border-color:var(--border);background:rgba(8,12,15,0.95);backdrop-filter:blur(12px)">
+  <div class="max-w-screen-xl mx-auto px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <span class="display text-2xl glow-green" style="color:var(--accent-green)">CARBON.EXE</span>
+      <span class="mono text-xs" style="color:var(--text-muted)">v1.0.0 — Digital Footprint Tracker</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 mono text-xs" style="color:var(--text-muted)">
+        <span class="dot dot-green" style="animation:pulse-glow 2s infinite"></span>
+        <span id="header-status">Connecting...</span>
+      </div>
+      <div class="mono text-xs" style="color:var(--text-muted)" id="header-time"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════
+     TABS NAV
+═══════════════════════════════════════════════════════ -->
+<div class="border-b" style="border-color:var(--border);background:var(--bg-secondary)">
+  <div class="max-w-screen-xl mx-auto px-6 flex gap-0">
+    <button class="tab-btn active" onclick="switchTab('analyzer')" id="tab-analyzer">⬡ Code Analyzer</button>
+    <button class="tab-btn" onclick="switchTab('calculator')" id="tab-calculator">◈ Calculator</button>
+    <button class="tab-btn" onclick="switchTab('history')" id="tab-history">◉ Dataset</button>
+    <button class="tab-btn" onclick="switchTab('about')" id="tab-about">⊕ About</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════ -->
+<main class="max-w-screen-xl mx-auto px-6 py-6 relative z-10">
+
+  <!-- ══ TAB 1: CODE ANALYZER ══════════════════════════════ -->
+  <div id="tab-content-analyzer">
+
+    <!-- Top stats bar -->
+    <div class="flex items-center gap-4 mb-6 mono text-xs" style="color:var(--text-muted)">
+      <span>// MODULE_01 — CODE CARBON ANALYZER</span>
+      <span class="ml-auto">COUNTRY:
+        <select id="country-select" style="font-size:11px;padding:3px 6px;margin-left:4px" onchange="updateIntensityDisplay()">
+          <option value="IN">🇮🇳 India (708)</option>
+          <option value="US">🇺🇸 USA (369)</option>
+          <option value="GB">🇬🇧 UK (233)</option>
+          <option value="DE">🇩🇪 Germany (385)</option>
+          <option value="FR">🇫🇷 France (56)</option>
+          <option value="CN">🇨🇳 China (555)</option>
+          <option value="NO">🇳🇴 Norway (26)</option>
+          <option value="AU">🇦🇺 Australia (620)</option>
+          <option value="CA">🇨🇦 Canada (120)</option>
+          <option value="JP">🇯🇵 Japan (474)</option>
+          <option value="GLOBAL">🌍 Global (475)</option>
+        </select>
+      </span>
+    </div>
+
+    <div class="grid gap-6" style="grid-template-columns: 1fr 380px">
+
+      <!-- Left: Code editor -->
+      <div>
+        <div class="panel mb-4">
+          <div class="panel-header">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-amber"></span>
+            <span class="dot dot-green"></span>
+            <span class="ml-2">code_editor.py</span>
+            <div class="ml-auto flex gap-2">
+              <select id="lang-select">
+                <option value="python">Python</option>
+                <option value="cpp">C++</option>
+              </select>
+              <button class="btn-secondary" onclick="loadSample()">Load Sample</button>
+            </div>
+          </div>
+          <textarea
+            id="code-input"
+            placeholder="# Paste your Python or C++ code here...
+# The system will execute it and measure real CPU usage + execution time
+# then compute energy consumption and CO₂ emissions.
+
+print('Hello, Carbon World!')"
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
+        </div>
+
+        <!-- Execute button + status -->
+        <div class="flex items-center gap-4">
+          <button class="btn-primary" id="run-btn" onclick="executeCode()">
+            ▶ RUN + MEASURE CO₂
+          </button>
+          <div id="run-status" class="mono text-xs" style="color:var(--text-muted)"></div>
+        </div>
+
+        <!-- Terminal output -->
+        <div class="panel mt-4">
+          <div class="panel-header">
+            <span>stdout / stderr</span>
+            <span class="ml-auto" id="return-code-badge"></span>
+          </div>
+          <div class="terminal" id="terminal-output">// Execution output will appear here...</div>
+        </div>
+      </div>
+
+      <!-- Right: Results panel -->
+      <div class="space-y-4">
+
+        <!-- CO₂ big number -->
+        <div class="panel p-5">
+          <div class="section-tag">Estimated CO₂ Emission</div>
+          <div class="co2-display glow-green" id="co2-display" style="color:var(--accent-green)">—</div>
+          <div class="mono text-xs mt-1" style="color:var(--text-muted)" id="co2-unit">grams CO₂eq</div>
+          <div class="mt-3" id="rating-display"></div>
+        </div>
+
+        <!-- Metrics grid -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="metric-card">
+            <div class="metric-label">Exec Time</div>
+            <div class="metric-value" id="m-exec-time">—</div>
+            <div class="metric-unit">seconds</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">CPU Usage</div>
+            <div class="metric-value" id="m-cpu">—</div>
+            <div class="metric-unit">percent</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="cpu-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Energy</div>
+            <div class="metric-value" id="m-energy">—</div>
+            <div class="metric-unit">kWh</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Power</div>
+            <div class="metric-value" id="m-power">—</div>
+            <div class="metric-unit">watts</div>
+          </div>
+        </div>
+
+        <!-- Power breakdown -->
+        <div class="panel p-4">
+          <div class="section-tag mb-3">Power Breakdown</div>
+          <div class="space-y-3" id="power-breakdown">
+            <div class="text-xs mono" style="color:var(--text-muted)">Run code to see breakdown...</div>
+          </div>
+        </div>
+
+        <!-- Comparisons -->
+        <div class="panel p-4">
+          <div class="section-tag mb-3">Equivalent To</div>
+          <div id="comparisons-display" class="space-y-2">
+            <div class="text-xs mono" style="color:var(--text-muted)">Run code to see comparisons...</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 2: CALCULATOR ══════════════════════════════════ -->
+  <div id="tab-content-calculator" class="hidden">
+
+    <div class="mono text-xs mb-6" style="color:var(--text-muted)">
+      // MODULE_03 — MANUAL ACTIVITY CARBON CALCULATOR
+    </div>
+
+    <div class="grid gap-6" style="grid-template-columns:1fr 1fr">
+
+      <!-- Inputs -->
+      <div class="space-y-4">
+        <div class="panel p-5">
+          <div class="section-tag mb-4">Activity Hours Today</div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">
+                💻 Coding / Programming (hours)
+              </label>
+              <input type="number" class="input-field" id="calc-coding" placeholder="0" min="0" max="24" step="0.5" />
+            </div>
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">
+                🎮 Gaming (hours)
+              </label>
+              <input type="number" class="input-field" id="calc-gaming" placeholder="0" min="0" max="24" step="0.5" />
+            </div>
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">
+                🧠 ML / AI Training (hours)
+              </label>
+              <input type="number" class="input-field" id="calc-ml" placeholder="0" min="0" max="24" step="0.5" />
+            </div>
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">
+                🌐 Browsing / General Use (hours)
+              </label>
+              <input type="number" class="input-field" id="calc-browsing" placeholder="0" min="0" max="24" step="0.5" />
+            </div>
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">
+                📺 Video Streaming (hours)
+              </label>
+              <input type="number" class="input-field" id="calc-video" placeholder="0" min="0" max="24" step="0.5" />
+            </div>
+
+            <div>
+              <label class="mono text-xs block mb-2" style="color:var(--text-muted)">Country</label>
+              <select id="calc-country" class="w-full" style="width:100%">
+                <option value="IN">🇮🇳 India (708 gCO₂/kWh)</option>
+                <option value="US">🇺🇸 USA (369)</option>
+                <option value="GB">🇬🇧 UK (233)</option>
+                <option value="FR">🇫🇷 France (56)</option>
+                <option value="DE">🇩🇪 Germany (385)</option>
+                <option value="CN">🇨🇳 China (555)</option>
+                <option value="NO">🇳🇴 Norway (26)</option>
+                <option value="GLOBAL">🌍 Global Avg (475)</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-primary w-full mt-5" onclick="calculateActivities()" style="width:100%">
+            ◈ CALCULATE FOOTPRINT
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="space-y-4" id="calc-results">
+        <div class="panel p-5">
+          <div class="section-tag">Results</div>
+          <div class="co2-display mt-2" id="calc-total-co2" style="color:var(--accent-amber)">—</div>
+          <div class="mono text-xs mt-1" style="color:var(--text-muted)">grams CO₂ total</div>
+          <div class="mt-3" id="calc-rating"></div>
+        </div>
+
+        <div class="panel p-4" id="calc-breakdown">
+          <div class="section-tag mb-3">Breakdown by Activity</div>
+          <div id="calc-activity-bars" class="mono text-xs" style="color:var(--text-muted)">
+            Fill in activities above and click Calculate.
+          </div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="section-tag mb-3">Comparisons</div>
+          <div id="calc-comparisons" class="mono text-xs" style="color:var(--text-muted)">
+            —
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 3: DATASET ════════════════════════════════════ -->
+  <div id="tab-content-history" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <div class="mono text-xs" style="color:var(--text-muted)">// MODULE_04 — DATASET LOG</div>
+      <button class="btn-secondary" onclick="loadDataset()">↺ Refresh</button>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-4 gap-4 mb-6" id="dataset-stats">
+      <div class="metric-card text-center">
+        <div class="metric-label">Total Records</div>
+        <div class="metric-value" id="stat-count">—</div>
+      </div>
+      <div class="metric-card text-center">
+        <div class="metric-label">Total CO₂</div>
+        <div class="metric-value" id="stat-co2">—</div>
+        <div class="metric-unit">grams</div>
+      </div>
+      <div class="metric-card text-center">
+        <div class="metric-label">Avg CO₂/exec</div>
+        <div class="metric-value" id="stat-avg">—</div>
+        <div class="metric-unit">grams</div>
+      </div>
+      <div class="metric-card text-center">
+        <div class="metric-label">Last Entry</div>
+        <div class="metric-value text-sm" id="stat-latest" style="font-size:13px">—</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="panel overflow-hidden">
+      <div class="panel-header">
+        <span>carbon_dataset.csv</span>
+        <span class="ml-auto" id="table-count"></span>
+      </div>
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Activity</th>
+              <th>Language</th>
+              <th>Exec (s)</th>
+              <th>CPU %</th>
+              <th>Energy (kWh)</th>
+              <th>CO₂ (g)</th>
+              <th>Intensity</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody id="dataset-tbody">
+            <tr><td colspan="9" class="text-center" style="padding:20px;color:var(--text-muted)">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 4: ABOUT ══════════════════════════════════════ -->
+  <div id="tab-content-about" class="hidden">
+    <div class="grid gap-6 max-w-4xl" style="grid-template-columns:1fr 1fr">
+
+      <div class="panel p-6">
+        <div class="display text-2xl mb-4" style="color:var(--accent-green)">ENERGY MODEL</div>
+        <div class="mono text-xs space-y-3" style="color:var(--text-muted);line-height:1.9">
+          <p><span style="color:var(--accent-teal)">P_cpu</span> = P_idle + (P_max - P_idle) × cpu_fraction</p>
+          <p><span style="color:var(--accent-teal)">P_total</span> = P_cpu + P_ram + P_disk</p>
+          <p><span style="color:var(--accent-teal)">Energy</span> = (P_total × time_s) / 3,600,000 kWh</p>
+          <p><span style="color:var(--accent-teal)">CO₂</span> = Energy × CarbonIntensity (gCO₂/kWh)</p>
+          <hr style="border-color:var(--border);margin:12px 0" />
+          <p>Desktop Mid Profile: 12W idle → 65W max TDP</p>
+          <p>RAM: 0.375W per GB (16GB = 6W)</p>
+          <p>SSD: 2W constant</p>
+        </div>
+      </div>
+
+      <div class="panel p-6">
+        <div class="display text-2xl mb-4" style="color:var(--accent-amber)">RATING SCALE</div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3 mono text-xs">
+            <span style="color:#22c55e">🌿 MINIMAL</span>
+            <span style="color:var(--text-muted)">&lt; 0.01g CO₂</span>
+          </div>
+          <div class="flex items-center gap-3 mono text-xs">
+            <span style="color:#86efac">✅ LOW</span>
+            <span style="color:var(--text-muted)">0.01 — 0.1g CO₂</span>
+          </div>
+          <div class="flex items-center gap-3 mono text-xs">
+            <span style="color:#fbbf24">⚠️ MEDIUM</span>
+            <span style="color:var(--text-muted)">0.1 — 1.0g CO₂</span>
+          </div>
+          <div class="flex items-center gap-3 mono text-xs">
+            <span style="color:#f97316">🔥 HIGH</span>
+            <span style="color:var(--text-muted)">1.0 — 10g CO₂</span>
+          </div>
+          <div class="flex items-center gap-3 mono text-xs">
+            <span style="color:#ef4444">💀 CRITICAL</span>
+            <span style="color:var(--text-muted)">&gt; 10g CO₂</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel p-6">
+        <div class="display text-2xl mb-4" style="color:var(--accent-blue)">ML PIPELINE</div>
+        <div class="mono text-xs space-y-2" style="color:var(--text-muted);line-height:1.8">
+          <p><span style="color:var(--text-code)">Algorithm:</span> Random Forest Regressor</p>
+          <p><span style="color:var(--text-code)">Features:</span> executionTime, cpuUsage,</p>
+          <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;language_enc, activity_enc,</p>
+          <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;carbonIntensity</p>
+          <p><span style="color:var(--text-code)">Target:</span> co2 (log-transformed)</p>
+          <p><span style="color:var(--text-code)">Train:</span> python3 ml-model/train_model.py</p>
+          <p><span style="color:var(--text-code)">Predict:</span> python3 ml-model/train_model.py --predict</p>
+        </div>
+      </div>
+
+      <div class="panel p-6">
+        <div class="display text-2xl mb-4" style="color:var(--accent-teal)">QUICK START</div>
+        <div class="mono text-xs space-y-2" style="color:var(--text-muted);line-height:1.8">
+          <p style="color:var(--text-code)"># Install backend deps</p>
+          <p>cd backend && npm install</p>
+          <p style="color:var(--text-code)"># Install Python deps</p>
+          <p>pip install psutil pandas scikit-learn</p>
+          <p style="color:var(--text-code)"># Start server</p>
+          <p>node backend/server.js</p>
+          <p style="color:var(--text-code)"># Live monitor</p>
+          <p>python3 system-monitor/system_monitor.py</p>
+          <p style="color:var(--text-code)"># Train ML model</p>
+          <p>python3 ml-model/train_model.py</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════ -->
+<footer class="border-t mt-8 py-4" style="border-color:var(--border)">
+  <div class="max-w-screen-xl mx-auto px-6 flex items-center justify-between mono text-xs" style="color:var(--text-muted)">
+    <span>CARBON.EXE // Digital Carbon Footprint Tracker</span>
+    <span>Records logged: <span id="footer-count">—</span></span>
+    <span>Carbon Intensity API: carbonintensity.org.uk</span>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
