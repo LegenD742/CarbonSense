@@ -1,9 +1,3 @@
-/**
- * carbonIntensityFetcher.js
- * Fetch real-time carbon intensity from https://api.carbonintensity.org.uk/intensity
- * Falls back to local dataset if API unavailable.
- * Caches result for 5 minutes to avoid hammering the API.
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -19,10 +13,7 @@ let cache = {
   ttlMs: 5 * 60 * 1000 // 5 minutes
 };
 
-/**
- * Fetch from UK Carbon Intensity API (public, no key needed)
- * Returns intensity in gCO2eq/kWh
- */
+
 async function fetchFromAPI() {
   try {
     // Dynamic import for node-fetch v2 compatibility

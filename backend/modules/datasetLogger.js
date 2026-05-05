@@ -1,9 +1,3 @@
-/**
- * datasetLogger.js
- * Module 4: Append execution results to CSV dataset for ML training
- * Fields: timestamp, activity, language, executionTime, cpuUsage,
- *         energy, co2, carbonIntensity
- */
 
 const fs = require('fs');
 const path = require('path');

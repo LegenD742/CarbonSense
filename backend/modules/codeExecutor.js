@@ -123,7 +123,7 @@ async function executePython(code) {
 
     // Execute monitor script
     const { stdout, stderr } = await execFileAsync(
-      'python3',
+      'python',
       [monitorScriptPath],
       {
         timeout: EXEC_TIMEOUT_MS,
@@ -238,7 +238,7 @@ print("__METRICS_JSON__:" + json.dumps(metrics))
     const runScriptPath = path.join(tempDir, `run_wrap_${Date.now()}.py`);
     fs.writeFileSync(runScriptPath, runScript, 'utf8');
 
-    const { stdout } = await execFileAsync('python3', [runScriptPath], {
+    const { stdout } = await execFileAsync('python', [runScriptPath], {
       timeout: EXEC_TIMEOUT_MS,
       maxBuffer: MAX_OUTPUT_BYTES
     });

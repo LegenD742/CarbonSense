@@ -1,0 +1,27 @@
+{
+  "language_map": {
+    "python": 0,
+    "cpp": 1,
+    "c++": 1,
+    "javascript": 2,
+    "java": 3,
+    "none": 4,
+    "other": 5
+  },
+  "activity_map": {
+    "coding": 0,
+    "gaming": 1,
+    "ml_training": 2,
+    "browsing": 3,
+    "video": 4,
+    "system_idle": 5,
+    "other": 6
+  },
+  "features": [
+    "executionTime",
+    "cpuUsage",
+    "language_enc",
+    "activity_enc",
+    "carbonIntensity"
+  ]
+}
